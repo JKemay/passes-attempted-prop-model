@@ -1,0 +1,10 @@
+{"content": {"playerStats": {
+  "101": {"name": "Manuel Akanji", "teamId": 1,
+    "stats": [{"title": "Top stats", "stats": {
+      "Accurate passes": {"stat": {"value": 70, "total": 74}},
+      "Minutes played": {"stat": {"value": 90}}}}]},
+  "102": {"name": "Granit Xhaka", "teamId": 1,
+    "stats": [{"title": "Top stats", "stats": {
+      "Accurate passes": {"stat": {"value": 79, "total": 83}},
+      "Minutes played": {"stat": {"value": 90}}}}]}
+}}}
