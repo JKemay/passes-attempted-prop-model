@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Passes Attempted - Value Board</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --text:#e8eaf0; --dim:#8a90a0;
+          --green:#3fb26f; --amber:#d9a441; --red:#d05555; }
+  body { margin:0; font:14px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:14px 20px; border-bottom:1px solid #262a33; display:flex; gap:16px; align-items:baseline; }
+  h1 { font-size:16px; margin:0; }
+  #asof { color:var(--dim); font-size:12px; }
+  nav a { color:var(--dim); margin-right:12px; cursor:pointer; }
+  nav a.active { color:var(--text); }
+  main { padding:16px 20px; }
+  table { border-collapse:collapse; width:100%; }
+  th, td { text-align:left; padding:7px 10px; border-bottom:1px solid #232732; }
+  th { color:var(--dim); cursor:pointer; user-select:none; }
+  tr.row:hover { background:#1d212b; cursor:pointer; }
+  .tag { padding:1px 8px; border-radius:9px; font-size:11px; }
+  .HIGH { background:#1d3a2a; color:var(--green); }
+  .MEDIUM { background:#3a331d; color:var(--amber); }
+  .LOW { background:#3a1d1d; color:var(--red); }
+  .pos { color:var(--green); } .neg { color:var(--red); }
+  #detail { background:var(--card); border:1px solid #262a33; border-radius:8px; padding:16px; margin-top:16px; display:none; }
+  .factors { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:12px 0; }
+  .factor { background:#12141a; border-radius:6px; padding:10px; }
+  .factor b { display:block; font-size:18px; }
+  .factor span { color:var(--dim); font-size:11px; }
+  svg text { fill:var(--dim); font-size:10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Passes Attempted - Value Board</h1>
+  <nav><a id="tab-board" class="active">Board</a><a id="tab-backtest">Backtest</a></nav>
+  <span id="asof"></span>
+</header>
+<main>
+  <div id="board-view">
+    <table id="board">
+      <thead><tr>
+        <th data-k="player_name">Player</th><th data-k="match_date">Match</th>
+        <th data-k="line">Line</th><th data-k="mu">Proj</th>
+        <th data-k="p_over">P(over)</th><th data-k="edge">Edge</th>
+        <th data-k="confidence">Conf</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+    <div id="detail"></div>
+  </div>
+  <div id="backtest-view" style="display:none"></div>
+</main>
+<script>
+let props = [], sortKey = "edge", sortDir = -1;
+
+function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function fmtPct(x){ return (100*x).toFixed(1) + "%"; }
+const CONF = ["HIGH","MEDIUM","LOW"];
+
+async function loadBoard(){
+  const res = await fetch("/api/board"); const data = await res.json();
+  props = data.props;
+  document.getElementById("asof").textContent =
+    data.data_as_of ? "projections as of " + data.data_as_of : "no projections yet - run update + project";
+  render();
+}
+
+function render(){
+  props.sort((a,b)=> (a[sortKey] > b[sortKey] ? 1 : -1) * sortDir);
+  const tb = document.querySelector("#board tbody");
+  tb.innerHTML = props.map(p => {
+    const conf = CONF.includes(p.confidence) ? p.confidence : "LOW";
+    return `
+    <tr class="row" data-id="${Number(p.projection_id)}">
+      <td>${esc(p.player_name)} <span style="color:var(--dim)">${esc(p.position)}</span></td>
+      <td>${esc(p.home)} v ${esc(p.away)} <span style="color:var(--dim)">${esc(p.match_date)}</span></td>
+      <td>${Number(p.line)}</td><td>${p.mu.toFixed(1)}</td><td>${fmtPct(p.p_over)}</td>
+      <td class="${p.edge>=0?"pos":"neg"}">${(100*p.edge).toFixed(1)}</td>
+      <td><span class="tag ${conf}">${conf}</span></td>
+    </tr>`;
+  }).join("");
+  tb.querySelectorAll("tr.row").forEach(tr =>
+    tr.addEventListener("click", () => showDetail(tr.dataset.id)));
+}
+
+document.querySelectorAll("th").forEach(th => th.addEventListener("click", () => {
+  const k = th.dataset.k;
+  sortDir = (sortKey === k) ? -sortDir : -1; sortKey = k; render();
+}));
+
+async function showDetail(id){
+  const d = await (await fetch("/api/prop/" + Number(id))).json();
+  const n = d.notes;
+  const games = n.baseline_games || [];
+  const maxP = Math.max(d.line, ...games.map(g=>Number(g.passes)||0), 1);
+  const bars = games.slice().reverse().map((g,i) => {
+    const passes = Number(g.passes) || 0;
+    const h = 90 * passes / maxP;
+    const over = passes > d.line;
+    return `<rect x="${i*34+4}" y="${100-h}" width="26" height="${h}"
+            fill="${over ? "var(--green)" : "#3a4152"}"></rect>
+            <text x="${i*34+8}" y="${96-h}">${passes}</text>`;
+  }).join("");
+  const lineY = 100 - 90 * d.line / maxP;
+  const num = v => (v === null || v === undefined) ? "-" : Number(v);
+  document.getElementById("detail").style.display = "block";
+  document.getElementById("detail").innerHTML = `
+    <h2 style="margin:0 0 4px">${esc(d.player_name)} - O/U ${Number(d.line)}</h2>
+    <div class="factors">
+      <div class="factor"><b>${d.mu.toFixed(1)}</b><span>projected passes</span></div>
+      <div class="factor"><b>${fmtPct(d.p_over)}</b><span>P(over)</span></div>
+      <div class="factor"><b>${(100*d.edge).toFixed(1)}</b><span>edge vs breakeven</span></div>
+      <div class="factor"><b>${num(n.exp_minutes)}</b><span>expected minutes</span></div>
+      <div class="factor"><b>${(100*n.share).toFixed(1)}%</b><span>team-pass share</span></div>
+      <div class="factor"><b>${num(n.team_pred)}</b><span>projected team passes</span></div>
+      <div class="factor"><b>${num(n.team_passes_needed)}</b><span>team passes needed to clear</span></div>
+      <div class="factor"><b>${num(n.opp_allowed)}</b><span>opp passes allowed baseline</span></div>
+      <div class="factor"><b>${num(n.spread)}</b><span>market spread team perspective</span></div>
+      <div class="factor"><b>${num(n.total)}</b><span>market total</span></div>
+    </div>
+    <svg viewBox="0 0 ${Math.max(games.length*34+8, 200)} 110" style="width:100%;max-width:700px">
+      ${bars}
+      <line x1="0" x2="100%" y1="${lineY}" y2="${lineY}" stroke="var(--amber)" stroke-dasharray="4 3"></line>
+    </svg>
+    <p style="color:var(--dim);font-size:12px">Bars: passes attempted, oldest to newest. Dashed line: current prop line. Green bars cleared it.</p>`;
+}
+
+async function loadBacktest(){
+  const r = await (await fetch("/api/backtest")).json();
+  const rows = r.buckets.map(b => `
+    <tr><td>${esc(b.range)}</td><td>${(100*b.predicted).toFixed(0)}%</td>
+    <td>${b.observed === null ? "-" : (100*b.observed).toFixed(0)+"%"}</td>
+    <td>${Number(b.count)}</td></tr>`).join("");
+  document.getElementById("backtest-view").innerHTML = `
+    <p style="color:var(--dim)">Calibration on pseudo-lines (trailing player median).
+    An honest model shows Observed near Predicted per bucket. n=${Number(r.n)}</p>
+    <table><thead><tr><th>P(over) bucket</th><th>Predicted</th><th>Observed</th>
+    <th>Count</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+document.getElementById("tab-board").onclick = () => {
+  document.getElementById("board-view").style.display = "";
+  document.getElementById("backtest-view").style.display = "none";
+  document.getElementById("tab-board").classList.add("active");
+  document.getElementById("tab-backtest").classList.remove("active");
+};
+document.getElementById("tab-backtest").onclick = () => {
+  document.getElementById("board-view").style.display = "none";
+  document.getElementById("backtest-view").style.display = "";
+  document.getElementById("tab-backtest").classList.add("active");
+  document.getElementById("tab-board").classList.remove("active");
+  loadBacktest();
+};
+
+loadBoard();
+</script>
+</body>
+</html>
