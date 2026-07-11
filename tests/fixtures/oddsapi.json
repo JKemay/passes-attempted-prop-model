@@ -1,0 +1,7 @@
+[{"home_team": "Switzerland", "away_team": "Colombia",
+  "commence_time": "2026-07-10T19:00:00Z",
+  "bookmakers": [{"key": "draftkings", "markets": [
+    {"key": "spreads", "outcomes": [
+      {"name": "Switzerland", "point": -0.5}, {"name": "Colombia", "point": 0.5}]},
+    {"key": "totals", "outcomes": [
+      {"name": "Over", "point": 2.5}, {"name": "Under", "point": 2.5}]}]}]}]
