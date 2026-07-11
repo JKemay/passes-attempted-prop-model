@@ -58,6 +58,7 @@ def fetch_odds():
             "regions": "us",
             "markets": "spreads,totals",
         },
+        headers=config.DEFAULT_HEADERS,
         timeout=30,
     )
     resp.raise_for_status()

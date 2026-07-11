@@ -49,11 +49,22 @@ def ingest_lines(conn, payload, fetched_at):
 
 
 def fetch_projections():
+    headers = {
+        **config.DEFAULT_HEADERS,
+        "Accept": "application/json",
+        "Origin": "https://app.prizepicks.com",
+        "Referer": "https://app.prizepicks.com/",
+    }
     resp = requests.get(
         URL,
         params={"league_id": config.PRIZEPICKS_LEAGUE_ID, "per_page": 500},
-        headers={"User-Agent": config.USER_AGENT},
+        headers=headers,
         timeout=30,
     )
+    if resp.status_code == 403:
+        raise RuntimeError(
+            "PrizePicks returned 403. Live fetching may require browser-like signed headers; "
+            "fixture parser remains usable."
+        )
     resp.raise_for_status()
     return resp.json()

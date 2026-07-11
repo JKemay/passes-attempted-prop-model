@@ -70,7 +70,7 @@ def cross_check(conn, match_id):
 def fetch_match_json(fotmob_match_id):
     resp = requests.get(
         f"https://www.fotmob.com/api/matchDetails?matchId={fotmob_match_id}",
-        headers={"User-Agent": config.USER_AGENT},
+        headers={**config.DEFAULT_HEADERS, "Accept": "application/json"},
         timeout=30,
     )
     resp.raise_for_status()

@@ -56,7 +56,13 @@ def parse_match(html: str):
 
 def fetch_html(url: str) -> str:
     time.sleep(config.FBREF_DELAY_SECONDS)
-    resp = requests.get(url, headers={"User-Agent": config.USER_AGENT}, timeout=30)
+    headers = {**config.DEFAULT_HEADERS, "Referer": "https://fbref.com/"}
+    resp = requests.get(url, headers=headers, timeout=30)
+    if resp.status_code == 403:
+        raise RuntimeError(
+            "FBref returned 403. Live fetching may require a browser/session fetch; "
+            "keep parser changes fixture-driven."
+        )
     resp.raise_for_status()
     return resp.text
 

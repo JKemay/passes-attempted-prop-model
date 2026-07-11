@@ -9,6 +9,11 @@ PARAMS_PATH = ROOT / "model_params.json"
 # --- scraping ---
 FBREF_DELAY_SECONDS = 6.0          # FBref rate limit: be polite or get banned
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) passmodel/0.1"
+DEFAULT_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+}
 ODDS_API_KEY = os.environ.get("ODDS_API_KEY", "")
 ODDS_SPORT_KEY = "soccer_fifa_world_cup"
 PRIZEPICKS_LEAGUE_ID = 82          # soccer
