@@ -1,0 +1,11 @@
+requests
+beautifulsoup4
+lxml
+pandas
+numpy
+scipy
+statsmodels
+fastapi
+uvicorn
+httpx
+pytest
