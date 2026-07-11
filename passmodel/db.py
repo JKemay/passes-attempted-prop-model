@@ -67,7 +67,7 @@ def get_conn(path=None):
     target = path or config.DB_PATH
     if path is None:
         config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(target)
+    conn = sqlite3.connect(target, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
