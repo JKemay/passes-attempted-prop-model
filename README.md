@@ -1,39 +1,54 @@
 # Passes-Attempted Prop Model
 
-A local tool that finds the best **value discrepancies in soccer "passes attempted" player props** (starting with the 2026 World Cup). It scrapes match data + posted prop lines, projects each player's passes attempted as a **probability distribution**, converts that to **P(over the line)**, and ranks every prop on a slate by **edge**. A local web dashboard shows a sortable value board and a click-in breakdown per prop.
+Finds edges in soccer passes-attempted props: projects each player's passes as a
+distribution, computes P(over the line), and ranks props by edge vs breakeven.
 
-> **Status:** design + full implementation plan complete. Code not yet built — execution is task-by-task from the plan below.
+## Daily Use
 
-## The core idea
+1. Double-click `update.bat` to scrape new matches, prop lines, odds, refit, and project.
+2. Double-click `dashboard.bat` to open the value board at http://127.0.0.1:8710.
+3. Click any row for the full factor breakdown.
 
-Hit rates lie. The real projection is structural:
+## Setup
 
+```bat
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+set ODDS_API_KEY=your_key_here
 ```
-projected_passes = (expected_minutes / 90) × projected_team_passes × player_pass_share
-```
 
-Team passes depend on possession baseline, opponent suppression, and game script (anchored by the betting market's spread/total). Player share is shrunk toward a positional prior so thin samples don't fool us. A **Negative Binomial** distribution around the mean yields P(over) — because edge needs a distribution, not a point estimate. Adjustment weights are **fitted from historical international data**, not hand-tuned.
+`ODDS_API_KEY` is optional, but recommended for game-script inputs. The free tier is
+available at The Odds API.
 
-Before it's trusted live, it must pass a **calibration backtest**: when it says 60% over, it should hit ~60%.
+## Adding Fit Data
 
-## Start here
+Edit `COMPETITIONS` in `scripts/update.py` and add FBref "Scores & Fixtures" URLs
+for qualifiers, Nations League, Euros, Copa America, and other international data.
+More history means better fitted coefficients.
 
-| Doc | Purpose |
-|-----|---------|
-| [`HANDOFF.md`](HANDOFF.md) | **Entry point for any agent/dev.** Orientation, constraints, known iteration points. |
-| [`docs/superpowers/specs/2026-07-09-passes-attempted-model-design.md`](docs/superpowers/specs/2026-07-09-passes-attempted-model-design.md) | Full design spec. |
-| [`docs/superpowers/plans/2026-07-09-passes-attempted-model.md`](docs/superpowers/plans/2026-07-09-passes-attempted-model.md) | **The work order** — 15 TDD tasks with exact files, code, tests, commits. |
+## Honest-Model Checklist
+
+- Backtest tab: Observed should track Predicted per bucket. If not, do not trust the board.
+- LOW confidence tags mean thin or unstable data; treat edges there as noise.
+- Model breakeven is `0.52`. Change `BREAKEVEN_PROB` in `passmodel/config.py` if your book differs.
 
 ## Architecture
 
+```text
+FBref + FotMob + PrizePicks + Odds API -> SQLite -> model engine -> FastAPI dashboard
 ```
-[1] Scrapers → [2] SQLite DB → [3] Model engine → [4] FastAPI dashboard
+
+The structural projection is:
+
+```text
+projected_passes = (expected_minutes / 90) * projected_team_passes * player_pass_share
 ```
 
-FBref (backbone) + FotMob (cross-check) + PrizePicks (lines) + The Odds API (game script) → SQLite → `fit_all()` / `project_slate()` → value board.
+Team volume is fitted from history, player share is shrunk toward a position prior, and
+a Negative Binomial distribution converts the mean projection into P(over).
 
-Tech: Python 3.11+, requests, beautifulsoup4, pandas, numpy, scipy, statsmodels, FastAPI, pytest.
+## Project Docs
 
-## Collaboration model
-
-This repo is worked by two agents: an **orchestrator** (planning, architecture, review) and an **executor** (implementation). Both read `HANDOFF.md` first. Executor works the plan task by task — each task ends with passing tests and a commit. No automated betting is ever in scope.
+- `HANDOFF.md`: orientation, constraints, and definition of done.
+- `docs/superpowers/specs/2026-07-09-passes-attempted-model-design.md`: full design spec.
+- `docs/superpowers/plans/2026-07-09-passes-attempted-model.md`: implementation work order.

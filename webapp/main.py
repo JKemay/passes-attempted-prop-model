@@ -10,6 +10,7 @@ STATIC = Path(__file__).parent / "static"
 def create_app(conn_factory=db.get_conn):
     app = FastAPI(title="passmodel")
     conn = conn_factory()
+    db.init_db(conn)
 
     @app.get("/api/board")
     def board():
@@ -50,10 +51,10 @@ def create_app(conn_factory=db.get_conn):
         from passmodel import backtest as bt
         from passmodel.model import engine
 
-        fitted = engine.fit_all(conn)
         first = conn.execute("SELECT MIN(date) d FROM matches").fetchone()
         if not first or first["d"] is None:
             return {"n": 0, "buckets": []}
+        fitted = engine.fit_all(conn)
         return bt.calibration(conn, fitted, start_date=first["d"])
 
     if STATIC.exists():
