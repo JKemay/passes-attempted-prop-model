@@ -27,8 +27,23 @@ def create_app(conn_factory=db.get_conn):
                ORDER BY pr.edge DESC"""
         ).fetchall()
         latest = conn.execute("SELECT MAX(created_at) t FROM projections").fetchone()
+        latest_scrape = conn.execute("SELECT MAX(run_at) t FROM scrape_log").fetchone()
+        scrape_as_of = latest_scrape["t"] if latest_scrape else None
+        failures = []
+        if scrape_as_of:
+            failures = [
+                {"source": r["source"], "detail": r["detail"]}
+                for r in conn.execute(
+                    """SELECT source, detail FROM scrape_log
+                       WHERE run_at=? AND ok=0
+                       ORDER BY source""",
+                    (scrape_as_of,),
+                ).fetchall()
+            ]
         return {
             "data_as_of": latest["t"] if latest else None,
+            "scrape_as_of": scrape_as_of,
+            "source_failures": failures,
             "props": [dict(r) for r in rows],
         }
 

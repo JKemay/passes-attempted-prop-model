@@ -45,6 +45,12 @@ def build_training_frame(conn):
 
 
 def fit(df):
+    if df.empty:
+        return {
+            "params": {"const": 0.0, "base": 1.0, "opp": 0.0, "spread": 0.0, "total": 0.0},
+            "impute": {"spread": 0.0, "total": 2.5},
+            "n": 0,
+        }
     impute = {
         "spread": float(df["spread"].dropna().mean()) if df["spread"].notna().any() else 0.0,
         "total": float(df["total"].dropna().mean()) if df["total"].notna().any() else 2.5,

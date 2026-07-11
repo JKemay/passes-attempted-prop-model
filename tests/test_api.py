@@ -35,3 +35,17 @@ def test_board_reports_freshness(conn):
     client = TestClient(create_app(lambda: _prepped(conn)))
     board = client.get("/api/board").json()
     assert board["data_as_of"]
+
+
+def test_board_reports_latest_scrape_failures(conn):
+    def prep():
+        db.log_scrape(conn, "2026-02-28T10:00:00", "fbref:World Cup", True, "ok")
+        db.log_scrape(conn, "2026-02-28T10:00:00", "oddsapi", False, "ODDS_API_KEY not set")
+        return conn
+
+    client = TestClient(create_app(prep))
+    board = client.get("/api/board").json()
+    assert board["scrape_as_of"] == "2026-02-28T10:00:00"
+    assert board["source_failures"] == [
+        {"source": "oddsapi", "detail": "ODDS_API_KEY not set"}
+    ]

@@ -16,3 +16,9 @@ def test_predict_uses_imputation_when_market_missing(conn):
     fitted = team_volume.fit(team_volume.build_training_frame(conn))
     a = team_volume.predict(fitted, base=500, opp=350)
     assert a is not None
+
+
+def test_fit_empty_frame_returns_default_model(conn):
+    fitted = team_volume.fit(team_volume.build_training_frame(conn))
+    assert fitted["n"] == 0
+    assert team_volume.predict(fitted, base=500, opp=350) == 500

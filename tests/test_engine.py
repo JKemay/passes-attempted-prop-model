@@ -17,6 +17,12 @@ def test_fit_all_returns_team_model_and_alphas(conn):
     assert fitted["alpha_by_pos"]["default"] > 0
 
 
+def test_fit_all_empty_db_returns_default_model(conn):
+    fitted = engine.fit_all(conn)
+    assert fitted["team_model"]["n"] == 0
+    assert fitted["alpha_by_pos"]["default"] > 0
+
+
 def test_project_slate_produces_projection(conn):
     ids = make_history(conn, n_matches=12, team_passes=500, akanji_base=64)
     _add_upcoming(conn)
