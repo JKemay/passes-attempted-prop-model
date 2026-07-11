@@ -1,0 +1,11 @@
+{"data": [
+  {"id": "1", "type": "projection",
+   "attributes": {"line_score": 64.5, "stat_type": "Passes Attempted"},
+   "relationships": {"new_player": {"data": {"id": "p1", "type": "new_player"}}}},
+  {"id": "2", "type": "projection",
+   "attributes": {"line_score": 2.5, "stat_type": "Shots"},
+   "relationships": {"new_player": {"data": {"id": "p1", "type": "new_player"}}}}
+],
+"included": [
+  {"id": "p1", "type": "new_player", "attributes": {"display_name": "Manuel Akanji"}}
+]}
