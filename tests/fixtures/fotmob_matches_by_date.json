@@ -1,9 +1,99 @@
 {
+  "date": "20260901",
   "leagues": [
     {
+      "ccode": "DEN",
+      "id": 939688,
+      "primaryId": 256,
+      "name": "A-Liga",
+      "parentLeagueId": 256,
+      "internalRank": 0,
+      "simpleLeague": false,
       "matches": [
-        {"id": 999001, "home": {"name": "Switzerland"}, "away": {"name": "Opponent 0"}},
-        {"id": 999002, "home": {"name": "Brazil"}, "away": {"name": "Argentina"}}
+        {
+          "id": 999001,
+          "leagueId": 939688,
+          "time": "01.09.2026 19:00",
+          "home": {
+            "id": 2073,
+            "score": 4,
+            "name": "Switzerland",
+            "redCards": 1,
+            "longName": "Switzerland"
+          },
+          "away": {
+            "id": 88747,
+            "score": 0,
+            "name": "Opponent 0",
+            "longName": "Opponent 0"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 6,
+          "tournamentStage": "5",
+          "status": {
+            "utcTime": "2026-09-01T17:00:00.000Z",
+            "numberOfHomeRedCards": 1,
+            "halfs": {
+              "firstHalfStarted": "01.09.2026 19:01:21",
+              "secondHalfStarted": "01.09.2026 20:06:59"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "4 - 0",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            }
+          },
+          "timeTS": 1788282000000
+        },
+        {
+          "id": 999002,
+          "leagueId": 939688,
+          "time": "01.09.2026 19:00",
+          "home": {
+            "id": 2073,
+            "score": 4,
+            "name": "Brazil",
+            "redCards": 1,
+            "longName": "Brazil"
+          },
+          "away": {
+            "id": 88747,
+            "score": 0,
+            "name": "Argentina",
+            "longName": "Argentina"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 6,
+          "tournamentStage": "5",
+          "status": {
+            "utcTime": "2026-09-01T17:00:00.000Z",
+            "numberOfHomeRedCards": 1,
+            "halfs": {
+              "firstHalfStarted": "01.09.2026 19:01:21",
+              "secondHalfStarted": "01.09.2026 20:06:59"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "4 - 0",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            }
+          },
+          "timeTS": 1788282000000
+        }
       ]
     }
   ]

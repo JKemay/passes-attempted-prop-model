@@ -84,7 +84,7 @@ def cross_check(conn, match_id):
 def fetch_match_json(fotmob_match_id):
     time.sleep(config.FOTMOB_DELAY_SECONDS)
     resp = requests.get(
-        f"https://www.fotmob.com/api/matchDetails?matchId={fotmob_match_id}",
+        f"{config.FOTMOB_API_BASE}/matchDetails?matchId={fotmob_match_id}",
         headers={**config.DEFAULT_HEADERS, "Accept": "application/json"},
         timeout=30,
     )
@@ -96,7 +96,7 @@ def fetch_matches_by_date(date):
     """FotMob's schedule endpoint, keyed by a plain YYYYMMDD date."""
     time.sleep(config.FOTMOB_DELAY_SECONDS)
     resp = requests.get(
-        f"https://www.fotmob.com/api/matches?date={date.replace('-', '')}",
+        f"{config.FOTMOB_API_BASE}/matches?date={date.replace('-', '')}",
         headers={**config.DEFAULT_HEADERS, "Accept": "application/json"},
         timeout=30,
     )
