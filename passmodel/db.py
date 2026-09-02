@@ -57,6 +57,10 @@ CREATE TABLE IF NOT EXISTS projections(
   mu REAL, alpha REAL, p_over REAL, edge REAL,
   confidence TEXT DEFAULT '', notes TEXT DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS data_quality_flags(
+  match_id INTEGER, player_id INTEGER, kind TEXT NOT NULL, detail TEXT DEFAULT '',
+  PRIMARY KEY(match_id, player_id, kind)
+);
 CREATE TABLE IF NOT EXISTS scrape_log(
   run_at TEXT, source TEXT, ok INTEGER, detail TEXT
 );
@@ -182,3 +186,31 @@ def log_scrape(conn, run_at, source, ok, detail=""):
         (run_at, source, int(ok), detail),
     )
     conn.commit()
+
+
+def flag_data_quality(conn, match_id, player_id, kind, detail=""):
+    """Record a data-quality concern so downstream scoring can see it.
+
+    Written by cross-source checks; read by the projection engine to force a
+    LOW confidence tag. Upserted so a re-scrape of the same match does not
+    accumulate duplicate flags.
+    """
+    conn.execute(
+        """INSERT INTO data_quality_flags(match_id, player_id, kind, detail)
+           VALUES(?,?,?,?)
+           ON CONFLICT(match_id, player_id, kind) DO UPDATE SET
+           detail=excluded.detail""",
+        (match_id, player_id, kind, detail),
+    )
+    conn.commit()
+
+
+def flagged_player_ids(conn, kind=None):
+    """Set of player_ids carrying at least one data-quality flag."""
+    if kind is None:
+        rows = conn.execute("SELECT DISTINCT player_id FROM data_quality_flags").fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT DISTINCT player_id FROM data_quality_flags WHERE kind=?", (kind,)
+        ).fetchall()
+    return {r["player_id"] for r in rows}

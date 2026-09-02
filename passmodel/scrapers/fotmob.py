@@ -51,6 +51,12 @@ def ingest_match(conn, match_id, data):
 
 
 def cross_check(conn, match_id):
+    """Compare FBref vs FotMob passes for one match.
+
+    Flags are persisted, not just returned: the projection engine reads them to
+    force a LOW confidence tag, which is the entire point of scraping a second
+    source. Returning them alone would leave the check decorative.
+    """
     rows = conn.execute(
         """SELECT a.player_id, a.passes_attempted fb, b.passes_attempted fm
            FROM player_match_stats a
@@ -64,6 +70,13 @@ def cross_check(conn, match_id):
         diff = abs((r["fb"] or 0) - (r["fm"] or 0))
         if diff > config.SOURCE_DISAGREE_PASSES:
             flags.append({"player_id": r["player_id"], "diff": diff})
+            db.flag_data_quality(
+                conn,
+                match_id,
+                r["player_id"],
+                "source_disagreement",
+                f"fbref={r['fb']} fotmob={r['fm']} diff={diff}",
+            )
     return flags
 
 

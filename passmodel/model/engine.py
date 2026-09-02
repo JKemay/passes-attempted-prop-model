@@ -1,6 +1,6 @@
 import json
 import statistics
-from passmodel import config
+from passmodel import config, db
 from passmodel.model import features, team_volume, distribution
 
 
@@ -66,12 +66,19 @@ def _confidence(n_games, minutes_list, disagree):
 
 def project_slate(conn, fitted, today, save=True, created_at=None):
     out = []
+    # Players whose two sources disagree on passes are not trustworthy inputs
+    # regardless of sample size, so they are forced to LOW below.
+    disagreeing = db.flagged_player_ids(conn, "source_disagreement")
     for ln in _latest_lines(conn):
         if ln["player_id"] is None:
             continue
         player = conn.execute(
             "SELECT * FROM players WHERE player_id=?", (ln["player_id"],)
         ).fetchone()
+        # prop_lines.player_id carries no foreign key, so a line can outlive the
+        # player row it points at. One stale line must not kill the whole slate.
+        if player is None or player["team_id"] is None:
+            continue
         match = _next_match(conn, player["team_id"], today)
         if match is None:
             continue
@@ -82,11 +89,11 @@ def project_slate(conn, fitted, today, save=True, created_at=None):
         )
         sign = 1 if match["home_team_id"] == player["team_id"] else -1
         base = features.team_baseline(conn, player["team_id"], today)
+        if base is None:
+            continue
         opp = features.opp_allowed_baseline(conn, opp_id, today)
         if opp is None:
             opp = base
-        if base is None or opp is None:
-            continue
         odds = conn.execute(
             """SELECT home_spread, total FROM market_odds WHERE match_id=?
                ORDER BY fetched_at DESC LIMIT 1""",
@@ -138,7 +145,11 @@ def project_slate(conn, fitted, today, save=True, created_at=None):
             "alpha": alpha,
             "p_over": p,
             "edge": edge,
-            "confidence": _confidence(len(games), [g["minutes"] for g in games], False),
+            "confidence": _confidence(
+                len(games),
+                [g["minutes"] for g in games],
+                player["player_id"] in disagreeing,
+            ),
             "notes": json.dumps(notes),
         }
         out.append(row)

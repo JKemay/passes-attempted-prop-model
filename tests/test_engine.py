@@ -54,3 +54,43 @@ def test_unmatched_player_line_is_skipped_not_fatal(conn):
     conn.commit()
     fitted = engine.fit_all(conn)
     assert engine.project_slate(conn, fitted, today="2026-02-28") == []
+
+
+def _line_for(conn, player_id, line=64.5):
+    conn.execute(
+        """INSERT INTO prop_lines(fetched_at, source, player_name, player_id, stat_type, line)
+           VALUES('2026-02-28T12:00:00','prizepicks','Manuel Akanji',?, 'Passes Attempted', ?)""",
+        (player_id, line),
+    )
+    conn.commit()
+
+
+def test_source_disagreement_forces_low_confidence(conn):
+    """The second data source only earns its keep if a disagreement it finds
+    actually reaches the board. Without the flag this player rates HIGH."""
+    ids = make_history(conn, n_matches=12, team_passes=500, akanji_base=64)
+    _add_upcoming(conn)
+    _line_for(conn, ids["akanji"])
+    fitted = engine.fit_all(conn)
+
+    before = engine.project_slate(conn, fitted, today="2026-02-28", save=False)
+    assert before[0]["confidence"] != "LOW"
+
+    db.flag_data_quality(
+        conn, 1, ids["akanji"], "source_disagreement", "fbref=78 fotmob=70 diff=8"
+    )
+    after = engine.project_slate(conn, fitted, today="2026-02-28", save=False)
+    assert after[0]["confidence"] == "LOW"
+
+
+def test_prop_line_pointing_at_missing_player_is_skipped_not_fatal(conn):
+    """prop_lines.player_id has no foreign key; one stale line must not take
+    down the rest of the slate."""
+    ids = make_history(conn, n_matches=12, team_passes=500, akanji_base=64)
+    _add_upcoming(conn)
+    _line_for(conn, 999999)          # no such player
+    _line_for(conn, ids["akanji"])   # a good line alongside it
+    fitted = engine.fit_all(conn)
+
+    projections = engine.project_slate(conn, fitted, today="2026-02-28", save=False)
+    assert [p["player_id"] for p in projections] == [ids["akanji"]]
