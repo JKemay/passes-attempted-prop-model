@@ -1,0 +1,10 @@
+{
+  "leagues": [
+    {
+      "matches": [
+        {"id": 999001, "home": {"name": "Switzerland"}, "away": {"name": "Opponent 0"}},
+        {"id": 999002, "home": {"name": "Brazil"}, "away": {"name": "Argentina"}}
+      ]
+    }
+  ]
+}

@@ -8,6 +8,7 @@ PARAMS_PATH = ROOT / "model_params.json"
 
 # --- scraping ---
 FBREF_DELAY_SECONDS = 6.0          # FBref rate limit: be polite or get banned
+FOTMOB_DELAY_SECONDS = 3.0         # same courtesy for FotMob's undocumented API
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) passmodel/0.1"
 DEFAULT_HEADERS = {
     "User-Agent": USER_AGENT,
