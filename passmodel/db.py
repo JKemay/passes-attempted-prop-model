@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS players(
 CREATE TABLE IF NOT EXISTS matches(
   match_id INTEGER PRIMARY KEY,
   fbref_match_id TEXT UNIQUE,
+  fotmob_match_id TEXT,
   date TEXT NOT NULL,
   competition TEXT NOT NULL,
   stage TEXT DEFAULT '',
@@ -78,7 +79,20 @@ def get_conn(path=None):
 
 def init_db(conn):
     conn.executescript(SCHEMA)
+    _migrate(conn)
     conn.commit()
+
+
+def _migrate(conn):
+    """ALTER-TABLE patches for DBs created before a column existed.
+
+    SCHEMA uses CREATE TABLE IF NOT EXISTS, so an existing populated
+    data/passmodel.db never picks up new columns on its own -- this runs
+    every init_db call and is a no-op once a DB is caught up.
+    """
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(matches)").fetchall()}
+    if "fotmob_match_id" not in cols:
+        conn.execute("ALTER TABLE matches ADD COLUMN fotmob_match_id TEXT")
 
 
 def get_or_create_team(conn, name):
@@ -145,6 +159,14 @@ def get_or_create_match(
     )
     conn.commit()
     return cur.lastrowid
+
+
+def set_fotmob_match_id(conn, match_id, fotmob_match_id):
+    """Cache a resolved FotMob id on its FBref match so it is looked up once."""
+    conn.execute(
+        "UPDATE matches SET fotmob_match_id=? WHERE match_id=?", (fotmob_match_id, match_id)
+    )
+    conn.commit()
 
 
 def upsert_player_stat(

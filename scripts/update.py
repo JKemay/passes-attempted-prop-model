@@ -5,8 +5,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from passmodel import config, db
-from passmodel.scrapers import fbref, oddsapi, prizepicks
+from passmodel import db
+from passmodel.scrapers import fbref, fotmob, oddsapi, prizepicks
 
 COMPETITIONS = [
     (
@@ -29,6 +29,17 @@ def main():
         except Exception as e:
             db.log_scrape(conn, now, f"fbref:{label}", False, str(e))
             print(f"[FAIL] fbref {label}: {e}")
+    try:
+        # Cross-checks FBref matches against FotMob; a disagreement is what lets
+        # the engine downgrade a player's projection to LOW confidence.
+        n_matches, n_flags = fotmob.update_fotmob(conn)
+        db.log_scrape(
+            conn, now, "fotmob", True, f"{n_matches} matches cross-checked, {n_flags} flags"
+        )
+        print(f"[ok] fotmob: {n_matches} matches cross-checked, {n_flags} flags")
+    except Exception as e:
+        db.log_scrape(conn, now, "fotmob", False, str(e))
+        print(f"[FAIL] fotmob: {e}")
     try:
         prizepicks.ingest_lines(conn, prizepicks.fetch_projections(), fetched_at=now)
         db.log_scrape(conn, now, "prizepicks", True)
